@@ -2,6 +2,8 @@ use rpc_agent::Providers;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    dotenv::dotenv().ok();
+
     let builder = rpc_agent::AgentServerBuilder::new(
         5500,
         Providers::Ollama,
