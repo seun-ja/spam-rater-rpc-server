@@ -1,8 +1,13 @@
 use rpc_agent::Providers;
+use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv::dotenv().ok();
+
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::new("info"))
+        .init();
 
     let builder = rpc_agent::AgentServerBuilder::new(
         5500,
