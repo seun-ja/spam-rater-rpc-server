@@ -1393,8 +1393,8 @@ dependencies = [
 
 [[package]]
 name = "rpc-agent"
-version = "0.1.4"
-source = "git+https://github.com/seun-ja/rpc-agent#ac56e99e50c7d710adb50585fe9ec2eb7c126e90"
+version = "0.1.5"
+source = "git+https://github.com/seun-ja/rpc-agent#0e3b1050589426a83abb7ab687b753c29e838041"
 dependencies = [
  "async-trait",
  "futures",
