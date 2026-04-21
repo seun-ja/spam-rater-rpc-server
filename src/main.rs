@@ -5,7 +5,8 @@ use tracing_subscriber::EnvFilter;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv::dotenv().ok();
 
-    let model = std::env::var("MODEL").unwrap_or_else(|_| "llama3.2:latest".to_string());
+    let model = std::env::var("MODEL")
+        .unwrap_or_else(|_| "huggingface-pytorch-inference-2026-04-21-23-03-14-915".to_string());
     let port: u16 = std::env::var("RPC_CLIENT_PORT")
         .unwrap_or_else(|_| "5500".to_string())
         .parse()
@@ -19,7 +20,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let builder = rpc_agent::AgentServerBuilder::new(
         port,
-        Providers::Ollama,
+        Providers::CustomSageMakerAI,
         "You are a email spam classifier, you would be given an email, sender and its subject and you would give a spam score from 0 to 1.
         You would respond in json format.
 
@@ -31,7 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         &model, //
     );
 
-    let server = builder.build()?;
+    let server = builder.build().await?;
 
     server.run().await?;
 
