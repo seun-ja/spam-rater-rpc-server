@@ -2045,7 +2045,7 @@ dependencies = [
 [[package]]
 name = "rpc-agent"
 version = "0.1.5"
-source = "git+https://github.com/oluseun-consult/rpc-agent-custom#3d00fca7ca9957f7a7003d56809adda4c2faaa9d"
+source = "git+https://github.com/oluseun-consult/rpc-agent-custom#c8e25ef9f63c143df734c184dd4f5f93782a373b"
 dependencies = [
  "async-trait",
  "aws-config",
