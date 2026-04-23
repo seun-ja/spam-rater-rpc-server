@@ -2,8 +2,8 @@ import argparse
 import sys
 import json
 import logging
-import torch
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+import torch # type: ignore
+from transformers import AutoModelForSequenceClassification, AutoTokenizer # type: ignore
 
 logging.basicConfig(
     level=logging.INFO,
@@ -13,43 +13,27 @@ logging.basicConfig(
 
 label_map = {0: "LABEL_0", 1: "LABEL_1", 2: "LABEL_2"}
 
-def predict(text, model_dir):
-    logging.info("Loading tokenizer from %s", model_dir)
-    tokenizer = AutoTokenizer.from_pretrained(model_dir)
-    logging.info("Loading model from %s", model_dir)
-    model = AutoModelForSequenceClassification.from_pretrained(model_dir)
+# Load model and tokenizer once at module level
+MODEL_DIR = "./merged-model-new"
+logging.info("Loading tokenizer from %s", MODEL_DIR)
+tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
+logging.info("Loading model from %s", MODEL_DIR)
+model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR)
+# Optimization: move model to GPU if available and set eval mode
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+logging.info("Using device: %s", device)
+model = model.to(device)
+model.eval()
+
+def predict(text):
     inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+    # Move inputs to the same device as the model
+    inputs = {k: v.to(device) for k, v in inputs.items()}
     logging.info("Running model inference")
-    with torch.no_grad():
+    with torch.inference_mode():
         outputs = model(**inputs)
         probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
         pred_idx = probs.argmax(dim=-1).item()
         score = probs[0, pred_idx].item()
     logging.info("Inference complete: label=%s, score=%s", label_map[pred_idx], score)
     return {"label": label_map[pred_idx], "score": score}
-
-def main():
-    parser = argparse.ArgumentParser(
-        description="Run local inference with merged-model-new."
-    )
-    parser.add_argument(
-        "--text", type=str, required=True, help="Input text to classify."
-    )
-    parser.add_argument(
-        "--model_dir",
-        type=str,
-        default="merged-model-new",
-        help="Path to model directory.",
-    )
-    args = parser.parse_args()
-    try:
-        result = predict(args.text, args.model_dir)
-        print(json.dumps(result))  # Only the result goes to stdout
-    except Exception as e:
-        import traceback
-        logging.error(e)
-        traceback.print_exc()
-        exit(1)
-
-if __name__ == "__main__":
-    main()

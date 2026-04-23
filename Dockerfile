@@ -1,7 +1,8 @@
 FROM rust:1.91.1-bookworm AS builder
 
 WORKDIR /app
-RUN apt-get update && apt-get install -y pkg-config libssl-dev
+# Install Python 3.11 and development headers for linking
+RUN apt-get update && apt-get install -y pkg-config libssl-dev python3.11 python3.11-dev
 
 COPY . .
 
@@ -9,8 +10,9 @@ RUN cargo build --release
 
 FROM debian:bookworm-slim
 
+# Install Python 3.11 runtime, dev headers (for shared lib), and pip/venv if needed
 RUN apt-get update -y \
-    && apt-get install -y --no-install-recommends ca-certificates python3 python3-pip python3-venv \
+    && apt-get install -y --no-install-recommends ca-certificates python3.11 python3.11-dev python3.11-venv python3.11-distutils python3-pip \
     && apt-get autoremove -y \
     && apt-get clean -y \
     && rm -rf /var/lib/apt/lists/*
@@ -23,9 +25,12 @@ RUN useradd -m appuser
 # Install Python dependencies in a virtual environment (portable)
 COPY --from=builder /app/requirements.txt /app/requirements.txt
 
-RUN python3 -m venv /app/venv \
+RUN python3.11 -m venv /app/venv \
     && /app/venv/bin/pip install --no-cache-dir -r /app/requirements.txt
+
+# Ensure Python can find local_inference.py
 ENV PATH="/app/venv/bin:$PATH"
+ENV PYTHONPATH="/app"
 
 # Confirm Python dependencies are installed
 RUN /app/venv/bin/pip list

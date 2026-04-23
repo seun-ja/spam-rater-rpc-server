@@ -1,4 +1,4 @@
-use rpc_agent::Providers;
+use rpc_agent::{AgentServer, Providers};
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -41,11 +41,21 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         model,
     );
 
-    let server = builder
-        .python_path("/app/venv/bin/python".to_string())
-        .build()
-        .await?;
+    let server = if env == "production" {
+        builder.build().await?
+    } else {
+        builder
+            .function_handler("predict".to_string())
+            .script_name("local_inference".to_string())
+            .build()
+            .await?
+    };
 
+    call_agent(server).await
+}
+
+#[tracing::instrument(name = "rpc.caller", skip(server))]
+async fn call_agent(server: AgentServer) -> Result<(), Box<dyn std::error::Error>> {
     server.run().await?;
 
     Ok(())
