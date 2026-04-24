@@ -1,8 +1,16 @@
 use rpc_agent::{AgentServer, Providers};
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::{EnvFilter, fmt::format::FmtSpan};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Add panic hook to log panics before exit
+    std::panic::set_hook(Box::new(|info| {
+        tracing::error!("[PANIC] Panic occurred: {:?}", info);
+        if let Some(location) = info.location() {
+            tracing::error!("[PANIC] At: {}:{}", location.file(), location.line());
+        }
+    }));
+
     dotenv::dotenv().ok();
 
     let env = std::env::var("ENVIRONMENT").unwrap_or_else(|_| "production".to_string());
@@ -25,6 +33,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::new(rust_log))
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
+        .pretty()
         .init();
 
     let builder = rpc_agent::AgentServerBuilder::new(
@@ -51,7 +61,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .await?
     };
 
-    call_agent(server).await
+    // Improved error logging for server.run
+    if let Err(e) = call_agent(server).await {
+        tracing::error!("[ERROR] Server exited with error: {:?}", e);
+        return Err(e);
+    }
+
+    Ok(())
 }
 
 #[tracing::instrument(name = "rpc.caller", skip(server))]
