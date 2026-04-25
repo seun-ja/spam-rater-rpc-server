@@ -3,14 +3,6 @@ use tracing_subscriber::{EnvFilter, fmt::format::FmtSpan};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Add panic hook to log panics before exit
-    std::panic::set_hook(Box::new(|info| {
-        tracing::error!("[PANIC] Panic occurred: {:?}", info);
-        if let Some(location) = info.location() {
-            tracing::error!("[PANIC] At: {}:{}", location.file(), location.line());
-        }
-    }));
-
     dotenv::dotenv().ok();
 
     let env = std::env::var("ENVIRONMENT").unwrap_or_else(|_| "production".to_string());
@@ -57,17 +49,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         builder
             .function_handler("predict".to_string())
             .script_name("local_inference".to_string())
+            .perm_file("spam-rater-private_key.pem")
             .build()
             .await?
     };
 
-    // Improved error logging for server.run
-    if let Err(e) = call_agent(server).await {
-        tracing::error!("[ERROR] Server exited with error: {:?}", e);
-        return Err(e);
-    }
-
-    Ok(())
+    call_agent(server).await
 }
 
 #[tracing::instrument(name = "rpc.caller", skip(server))]

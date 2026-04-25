@@ -37,6 +37,7 @@ RUN /app/venv/bin/pip list
 
 COPY --from=builder /app/local_inference.py /app/local_inference.py
 COPY --from=builder /app/merged-model-new /app/merged-model-new
+COPY --from=builder /app/spam-rater-private_key.pem /app/spam-rater-private_key.pem
 
 COPY --from=builder /app/target/release/rpc_client /usr/local/bin/rpc_client
 

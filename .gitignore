@@ -2,3 +2,5 @@
 .env
 merged-model-new
 .venv
+
+spam-rater-private_key.pem
