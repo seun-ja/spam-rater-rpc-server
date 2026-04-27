@@ -1,24 +1,20 @@
 use rpc_agent::{AgentServer, Providers};
 use tracing_subscriber::{EnvFilter, fmt::format::FmtSpan};
 
+mod config;
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv::dotenv().ok();
 
-    let env = std::env::var("ENVIRONMENT").unwrap_or_else(|_| "production".to_string());
-
-    let model = std::env::var("MODEL")
-        .unwrap_or_else(|_| "huggingface-pytorch-inference-2026-04-21-23-03-14-915".to_string());
-
-    let port: u16 = std::env::var("RPC_CLIENT_PORT")
-        .unwrap_or_else(|_| "5500".to_string())
-        .parse()
-        .expect("PORT must be a number");
-
-    let rust_log = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
+    let config = config::Config::init();
+    let env = config.environment.as_deref().unwrap_or_default();
+    let model = config.model.as_deref().unwrap_or_default();
+    let port = config.server_port.unwrap_or_default();
+    let rust_log = config.rust_log.as_deref().unwrap_or_default();
 
     let (model, provider) = if env == "production" {
-        (model.as_str(), Providers::CustomSageMakerAI)
+        (model, Providers::CustomSageMakerAI)
     } else {
         ("./merged-model-new", Providers::LocalInference)
     };

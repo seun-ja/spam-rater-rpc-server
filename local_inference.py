@@ -36,32 +36,38 @@ LABEL_MAP = {0: "LABEL_0", 1: "LABEL_1", 2: "LABEL_2"}
 # Limit threads (important in containers)
 torch.set_num_threads(1)
 
+
 # ---------------------------
-# Load tokenizer & model
+# Singleton cache for model/tokenizer/device
 # ---------------------------
-logging.info("Loading tokenizer from %s", MODEL_DIR)
-tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
+class ModelCache:
+    _instance = None
 
-logging.info("Loading model from %s", MODEL_DIR)
-model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR)
+    def __init__(self):
+        if ModelCache._instance is not None:
+            raise RuntimeError("ModelCache is a singleton!")
+        logging.info("Loading tokenizer from %s", MODEL_DIR)
+        self.tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
+        logging.info("Loading model from %s", MODEL_DIR)
+        self.model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        logging.info("Initial device: %s", self.device)
+        try:
+            self.model = self.model.to(self.device)
+        except Exception as e:
+            logging.warning("Failed to move model to CUDA, falling back to CPU: %s", e)
+            self.device = torch.device("cpu")
+            self.model = self.model.to(self.device)
+        self.model.eval()
+        self.max_length = min(512, getattr(self.tokenizer, "model_max_length", 512))
+        logging.info("Using max_length=%s", self.max_length)
+        ModelCache._instance = self
 
-# Device selection
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-logging.info("Initial device: %s", device)
-
-# Safe device move
-try:
-    model = model.to(device)
-except Exception as e:
-    logging.warning("Failed to move model to CUDA, falling back to CPU: %s", e)
-    device = torch.device("cpu")
-    model = model.to(device)
-
-model.eval()
-
-# Determine safe max length
-MAX_LENGTH = min(512, getattr(tokenizer, "model_max_length", 512))
-logging.info("Using max_length=%s", MAX_LENGTH)
+    @staticmethod
+    def get():
+        if ModelCache._instance is None:
+            ModelCache()
+        return ModelCache._instance
 
 # ---------------------------
 # Custom error
@@ -73,6 +79,12 @@ class ModelError(Exception):
 # Prediction function
 # ---------------------------
 def predict(text: str):
+    cache = ModelCache.get()
+    tokenizer = cache.tokenizer
+    model = cache.model
+    device = cache.device
+    max_length = cache.max_length
+    
     try:
         log_memory("before_tokenize")
 
@@ -80,7 +92,7 @@ def predict(text: str):
             text,
             return_tensors="pt",
             truncation=True,
-            max_length=MAX_LENGTH
+            max_length=max_length
         )
 
         log_memory("after_tokenize")
