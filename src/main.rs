@@ -10,7 +10,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = config::Config::init();
     let env = config.environment.as_deref().unwrap_or_default();
     let model = config.model.as_deref().unwrap_or_default();
-    let port = config.server_port.unwrap_or_default();
+    let port = config.rpc_port.unwrap_or_default();
     let rust_log = config.rust_log.as_deref().unwrap_or_default();
 
     let (model, provider) = if env == "production" {
