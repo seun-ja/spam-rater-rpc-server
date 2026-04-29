@@ -2377,7 +2377,7 @@ dependencies = [
 [[package]]
 name = "rpc-agent"
 version = "0.1.5"
-source = "git+https://github.com/oluseun-consult/rpc-agent-custom#8a238a86a6e6bb743630b86f7d79d3bd71061a58"
+source = "git+https://github.com/oluseun-consult/rpc-agent-custom#fff8bba0c4ae8a7d1481321336d5ed625a55fe8e"
 dependencies = [
  "aes-gcm",
  "async-trait",
@@ -2386,6 +2386,7 @@ dependencies = [
  "aws-sdk-sagemakerruntime",
  "base64 0.21.7",
  "futures",
+ "hex",
  "jsonwebtoken",
  "pyo3",
  "rig-core",

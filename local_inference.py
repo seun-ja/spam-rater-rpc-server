@@ -50,12 +50,20 @@ class ModelCache:
         self.tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
         logging.info("Loading model from %s", MODEL_DIR)
         self.model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        logging.info("Initial device: %s", self.device)
+        # Device selection: prefer MPS (Apple Silicon), then CUDA, then CPU
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available() and torch.backends.mps.is_built():
+            self.device = torch.device("mps")
+            logging.info("Initial device: mps (Apple Silicon)")
+        elif torch.cuda.is_available():
+            self.device = torch.device("cuda")
+            logging.info("Initial device: cuda (GPU)")
+        else:
+            self.device = torch.device("cpu")
+            logging.info("Initial device: cpu")
         try:
             self.model = self.model.to(self.device)
         except Exception as e:
-            logging.warning("Failed to move model to CUDA, falling back to CPU: %s", e)
+            logging.warning("Failed to move model to %s, falling back to CPU: %s", self.device, e)
             self.device = torch.device("cpu")
             self.model = self.model.to(self.device)
         self.model.eval()

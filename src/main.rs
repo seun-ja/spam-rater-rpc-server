@@ -45,7 +45,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         builder
             .function_handler("predict".to_string())
             .script_name("local_inference".to_string())
-            .perm_file("spam-rater-private_key.pem")
+            .perm_file("new_private_key.pem")
             .build()
             .await?
     };
