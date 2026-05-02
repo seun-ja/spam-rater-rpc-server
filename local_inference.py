@@ -7,18 +7,12 @@ import torch  # type: ignore
 import psutil  # type: ignore
 from transformers import AutoModelForSequenceClassification, AutoTokenizer  # type: ignore
 
-# ---------------------------
-# Logging setup
-# ---------------------------
 logging.basicConfig(
     level=logging.INFO,
     format='[%(levelname)s] %(message)s',
     stream=sys.stderr
 )
 
-# ---------------------------
-# Utilities
-# ---------------------------
 def log_memory(stage: str):
     try:
         process = psutil.Process(os.getpid())
@@ -27,19 +21,12 @@ def log_memory(stage: str):
     except Exception:
         logging.warning("Failed to read memory usage")
 
-# ---------------------------
-# Config
-# ---------------------------
 MODEL_DIR = "./merged-model-new"
 LABEL_MAP = {0: "LABEL_0", 1: "LABEL_1", 2: "LABEL_2"}
 
 # Limit threads (important in containers)
 torch.set_num_threads(1)
 
-
-# ---------------------------
-# Singleton cache for model/tokenizer/device
-# ---------------------------
 class ModelCache:
     _instance = None
 
@@ -77,21 +64,15 @@ class ModelCache:
             ModelCache()
         return ModelCache._instance
 
-# ---------------------------
-# Custom error
-# ---------------------------
 class ModelError(Exception):
     pass
 
-# ---------------------------
-# Prediction function
-# ---------------------------
 def predict(text: str):
-    cache = ModelCache.get()
-    tokenizer = cache.tokenizer
-    model = cache.model
-    device = cache.device
-    max_length = cache.max_length
+    model_cache = ModelCache.get()
+    tokenizer = model_cache.tokenizer
+    model = model_cache.model
+    device = model_cache.device
+    max_length = model_cache.max_length
     
     try:
         log_memory("before_tokenize")

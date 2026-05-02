@@ -1,0 +1,29 @@
+# Ignore Python cache and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.env
+
+# Ignore Rust build and target directories
+target/
+
+# Ignore model and data artifacts
+merged-model-new/
+
+# Ignore VS Code and editor settings
+.vscode/
+*.code-workspace
+
+# Ignore OS files
+.DS_Store
+Thumbs.db
+
+# Ignore Docker files that shouldn't be copied
+Dockerfile
+!requirements.txt
+!Cargo.toml
+!local_inference.py
+!src/
+!code/
